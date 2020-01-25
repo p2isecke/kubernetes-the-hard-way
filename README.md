@@ -1,3 +1,17 @@
+# THIS IS A FORK
+
+This is a fork of [Kubernetes The Hard Way](https://github.com/kelseyhightower/kubernetes-the-hard-way) by Kelsey Hightower.
+It attempts to do the following:
+1. Create resources in AWS, instead of GCP, in order to get more practice with AWS development. 
+1. Create resources using Terraform to get practice with a common development tool. 
+1. Alleviate my imposter syndrome. 
+
+Thanks to:
+* https://github.com/slawekzachcial/kubernetes-the-hard-way-aws#installing-the-client-tools
+* https://github.com/prabhatsharma/kubernetes-the-hard-way-aws
+
+for helping me validate my procedures.
+
 # Kubernetes The Hard Way
 
 This tutorial walks you through setting up Kubernetes the hard way. This guide is not for people looking for a fully automated command to bring up a Kubernetes cluster. If that's you then check out [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine), or the [Getting Started Guides](https://kubernetes.io/docs/setup).
@@ -5,11 +19,6 @@ This tutorial walks you through setting up Kubernetes the hard way. This guide i
 Kubernetes The Hard Way is optimized for learning, which means taking the long route to ensure you understand each task required to bootstrap a Kubernetes cluster.
 
 > The results of this tutorial should not be viewed as production ready, and may receive limited support from the community, but don't let that stop you from learning!
-
-## Copyright
-
-<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
-
 
 ## Target Audience
 
@@ -26,8 +35,6 @@ Kubernetes The Hard Way guides you through bootstrapping a highly available Kube
 * [etcd](https://github.com/coreos/etcd) v3.4.0
 
 ## Labs
-
-This tutorial assumes you have access to the [Google Cloud Platform](https://cloud.google.com). While GCP is used for basic infrastructure requirements the lessons learned in this tutorial can be applied to other platforms.
 
 * [Prerequisites](docs/01-prerequisites.md)
 * [Installing the Client Tools](docs/02-client-tools.md)
