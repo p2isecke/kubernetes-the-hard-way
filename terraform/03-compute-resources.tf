@@ -1,31 +1,9 @@
-# TODO
-1. Read Kubernetes documentation in the [Networking](#Networking) section.
-1. This lab says networking policies are out of scope. Make sure to review this.
-1. Read about how Internet Gateways and route tables are configured in a VPC
+provider "aws" {
+  profile = "default"
+  region  = "us-east-1"
+  version = "2.46"
+}
 
-See the [terraform code](../terraform/03-compute-resources.tf) for this section. 
-
-# Provisioning Compute Resources
-
-Kubernetes requires a set of machines to host the Kubernetes control plane and the worker nodes where containers are ultimately run.
-
-## Networking
-
-The Kubernetes [networking model](https://kubernetes.io/docs/concepts/cluster-administration/networking/#kubernetes-model) assumes a flat network in which containers and nodes can communicate with each other. In cases where this is not desired [network policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/) can limit how groups of containers are allowed to communicate with each other and external network endpoints.
-
-> Setting up network policies is out of scope for this tutorial.
-
-### Virtual Private Cloud
-
-In this section a dedicated [Virtual Private Cloud](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html) (VPC) network will be setup to host the Kubernetes cluster.
-
-> [VPC Considerations](https://docs.aws.amazon.com/eks/latest/userguide/network_reqs.html)
-
-> The CloudFormation code in [Creating a VPC for Your Amazon EKS Cluster](https://docs.aws.amazon.com/eks/latest/userguide/create-public-private-vpc.html) creates all of these resources for you.
-
-Create the `kubernetes-the-hard-way` VPC:
-
-```
 resource "aws_vpc" "kubernetes-the-hard-way" {
   cidr_block           = "10.240.0.0/24"
   enable_dns_support   = "true"
@@ -35,15 +13,7 @@ resource "aws_vpc" "kubernetes-the-hard-way" {
     Creator = "terraform"
   }
 }
-```
-> More details on `enableDnsHostnames` and `enableDnsSupport` [here](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-dns.html).
 
-### Subnet
-A [subnet](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Subnets.html) must be provisioned with an IP address range large enough to assign a private IP address to each node in the Kubernetes cluster.
-
-Create a public and private subnet in the `kubernetes-the-hard-way` VPC network:
-
-```
 resource "aws_subnet" "public-kubernetes-the-hard-way" {
   vpc_id     = "${aws_vpc.kubernetes-the-hard-way.id}"
   cidr_block = "10.240.0.0/25"
@@ -63,13 +33,7 @@ resource "aws_subnet" "private-kubernetes-the-hard-way" {
     Creator = "terraform"
   }
 }
-```
 
-### Internet Gateway
-
-Create an [Internet Gateway](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html) that allows communication between instances in the VPC and the internet.
-
-```
 resource "aws_internet_gateway" "igw-kubernetes-the-hard-way" {
   vpc_id = "${aws_vpc.kubernetes-the-hard-way.id}"
 
@@ -78,12 +42,7 @@ resource "aws_internet_gateway" "igw-kubernetes-the-hard-way" {
     Creator = "terraform"
   }
 }
-```
 
-### NAT Gateway
-Create a [NAT Gateway](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html) to enable instances in a private subnet to communicate to the internet or other AWS services, but prevent the internet from initiating a connection with those instances 
-
-```
 resource "aws_eip" "eip-kubernetes-the-hard-way" {
   vpc = true
 
@@ -106,13 +65,7 @@ resource "aws_nat_gateway" "nat-kubernetes-the-hard-way" {
 
   depends_on = ["aws_internet_gateway.igw-kubernetes-the-hard-way"]
 }
-```
 
-### Route Tables
-A [route table](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html) contains a set of rules, called routes, that are used to determine where network traffic from your subnet or gateway is directed.
-
-Public Routes:
-```
 resource "aws_route_table" "public-route-table-kubernetes-the-hard-way" {
   vpc_id = "${aws_vpc.kubernetes-the-hard-way.id}"
 
@@ -133,10 +86,7 @@ resource "aws_route_table_association" "public-route-subnet-kubernetes-the-hard-
   subnet_id      = "${aws_subnet.public-kubernetes-the-hard-way.id}"
   route_table_id = "${aws_route_table.public-route-table-kubernetes-the-hard-way.id}"
 }
-```
 
-Private Routes:
-```
 resource "aws_route_table" "private-route-table-kubernetes-the-hard-way" {
   vpc_id = "${aws_vpc.kubernetes-the-hard-way.id}"
 
@@ -157,17 +107,7 @@ resource "aws_route_table_association" "private-route-subnet-kubernetes-the-hard
   subnet_id      = "${aws_subnet.private-kubernetes-the-hard-way.id}"
   route_table_id = "${aws_route_table.private-route-table-kubernetes-the-hard-way.id}"
 }
-```
 
-### Security Groups/Firewall Rules
-
-A [security group](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html) acts as a virtual firewall for your instance to control inbound and outbound traffic. When you launch an instance in a VPC, you can assign up to five security groups to the instance. Security groups act at the instance level, not the subnet level. Therefore, each instance in a subnet in your VPC can be assigned to a different set of security groups.
-
-> TODO: Create 2 separate security groups for the controller and worker nodes: https://docs.aws.amazon.com/eks/latest/userguide/sec-group-reqs.html
-
-Create a firewall rule that allows internal communication across all protocols:
-
-```
 resource "aws_security_group" "kubernetes-the-hard-way-sg" {
   name        = "kubernetes-the-hard-way-sg"
   description = "Kubernetes security group"
@@ -188,12 +128,7 @@ resource "aws_security_group_rule" "internal-comm-kubernetes-the-hard-way" {
   protocol          = "all"
   cidr_blocks       = ["10.240.0.0/24", "10.200.0.0/16"]
 }
-```
 
-Create a firewall rule that allows external SSH, ICMP, and HTTPS:
-> Manually update the `me-ssh-kubernetes-the-hard-way` security group inbound rule source to be my IP address.
-
-```
 resource "aws_security_group_rule" "k8s-api-server-comm-kubernetes-the-hard-way" {
   security_group_id = "${aws_security_group.kubernetes-the-hard-way-sg.id}"
   type              = "ingress"
@@ -234,15 +169,7 @@ resource "aws_security_group_rule" "egress-kubernetes-the-hard-way" {
   protocol          = "all"
   cidr_blocks       = ["0.0.0.0/0"]
 }
-```
 
-### Kubernetes Public IP Address
-
-A load balancer serves as the single point of contact for clients. The load balancer distributes incoming traffic across multiple targets, such as Amazon EC2 instances. This increases the availability of your application. [Elastic Load Balancing](https://docs.aws.amazon.com/elasticloadbalancing/latest/userguide/what-is-load-balancing.html) distributes incoming application or network traffic across multiple targets, such as Amazon EC2 instances, containers, and IP addresses, in multiple Availability Zones. 
-
-Create a [Network Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/network-load-balancer-getting-started.html) to handle incoming traffic. 
-
-```
 resource "aws_lb" "nlb-kubernetes-the-hard-way" {
   name               = "nlb-kubernetes-the-hard-way"
   internal           = false
@@ -292,17 +219,7 @@ resource "aws_lb_listener" "public-access-kubernetes-the-hard-way" {
 output "kubernetes-public-ip" {
   value = "${aws_lb.nlb-kubernetes-the-hard-way.dns_name}"
 }
-```
 
-## Compute Instances
-
-The compute instances in this lab will be provisioned using [Ubuntu Server](https://www.ubuntu.com/server) 18.04, which has good support for the [containerd container runtime](https://github.com/containerd/containerd). Each compute instance will be provisioned with a fixed private IP address to simplify the Kubernetes bootstrapping process. All instances will run in the private subnet. In order to access these nodes, configure [SSH access](#Configuring-SSH-Access).
-
-### Kubernetes Controllers
-
-Create three compute instances which will host the Kubernetes control plane:
-
-```
 data "aws_ami" "kubernetes-the-hard-way-ubuntu" {
   owners = ["amazon"]
 
@@ -349,6 +266,10 @@ resource "aws_instance" "kubernetes-the-hard-way-controller0" {
   }
 }
 
+output "controller-0" {
+  value = "${aws_instance.kubernetes-the-hard-way-controller0.private_ip}"
+}
+
 resource "aws_instance" "kubernetes-the-hard-way-controller1" {
   ami                         = "${data.aws_ami.kubernetes-the-hard-way-ubuntu.id}"
   instance_type               = "t2.micro"
@@ -370,14 +291,11 @@ resource "aws_instance" "kubernetes-the-hard-way-controller1" {
     Creator = "terraform"
   }
 }
-```
 
-### Kubernetes Workers
+output "controller-1" {
+  value = "${aws_instance.kubernetes-the-hard-way-controller1.private_ip}"
+}
 
-Each worker instance requires a pod subnet allocation from the Kubernetes cluster CIDR range.
-Create three compute instances which will host the Kubernetes worker nodes:
-
-```
 resource "aws_instance" "kubernetes-the-hard-way-controller2" {
   ami                         = "${data.aws_ami.kubernetes-the-hard-way-ubuntu.id}"
   instance_type               = "t2.micro"
@@ -398,6 +316,10 @@ resource "aws_instance" "kubernetes-the-hard-way-controller2" {
     Name    = "kubernetes-the-hard-way-controller2"
     Creator = "terraform"
   }
+}
+
+output "controller-2" {
+  value = "${aws_instance.kubernetes-the-hard-way-controller2.private_ip}"
 }
 
 resource "aws_instance" "kubernetes-the-hard-way-worker0" {
@@ -422,6 +344,10 @@ resource "aws_instance" "kubernetes-the-hard-way-worker0" {
   }
 }
 
+output "worker-0" {
+  value = "${aws_instance.kubernetes-the-hard-way-worker0.private_ip}"
+}
+
 resource "aws_instance" "kubernetes-the-hard-way-worker1" {
   ami                         = "${data.aws_ami.kubernetes-the-hard-way-ubuntu.id}"
   instance_type               = "t2.micro"
@@ -442,6 +368,10 @@ resource "aws_instance" "kubernetes-the-hard-way-worker1" {
     Name    = "kubernetes-the-hard-way-worker1"
     Creator = "terraform"
   }
+}
+
+output "worker-1" {
+  value = "${aws_instance.kubernetes-the-hard-way-worker1.private_ip}"
 }
 
 resource "aws_instance" "kubernetes-the-hard-way-worker2" {
@@ -465,14 +395,11 @@ resource "aws_instance" "kubernetes-the-hard-way-worker2" {
     Creator = "terraform"
   }
 }
-```
 
-## Configuring SSH Access
+output "worker-2" {
+  value = "${aws_instance.kubernetes-the-hard-way-worker2.private_ip}"
+}
 
-Since a public and private subnet was created in the VPC, you can't SSH onto the contoller or worker instances directly. Create a bastion host (jump server) in the public subnet. From the jump server, you can SSH to the instances in the private subnet. 
-
-### Create the jump server
-```
 resource "aws_security_group" "ssh-access-kubernetes-the-hard-way" {
   name        = "ssh-access-kubernetes-the-hard-way"
   description = "Kubernetes security group"
@@ -507,7 +434,10 @@ resource "aws_security_group_rule" "ssh-egress-kubernetes-the-hard-way" {
   protocol          = "all"
   cidr_blocks       = ["0.0.0.0/0"]
 }
-
+variable "jump-server" {
+  type = string
+  default = "10.240.0.10"
+}
 
 resource "aws_security_group_rule" "ssh-jump-kubernetes-the-hard-way" {
   security_group_id = "${aws_security_group.kubernetes-the-hard-way-sg.id}"
@@ -516,13 +446,7 @@ resource "aws_security_group_rule" "ssh-jump-kubernetes-the-hard-way" {
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
-  cidr_blocks       = ["${var.jump_server}/32"]
-}
-
-
-variable "jump_server" {
-  type = string
-  default = "10.240.0.10"
+  cidr_blocks       = ["${var.jump-server}/32"]
 }
 
 resource "aws_instance" "jump-kubernetes-the-hard-way" {
@@ -531,7 +455,7 @@ resource "aws_instance" "jump-kubernetes-the-hard-way" {
   associate_public_ip_address = true
   key_name                    = "kubernetes-the-hard-way"
   vpc_security_group_ids      = ["${aws_security_group.ssh-access-kubernetes-the-hard-way.id}"]
-  private_ip                  = "${var.jump_server}"
+  private_ip                  = "${var.jump-server}"
   user_data                   = "name=jump"
   subnet_id                   = "${aws_subnet.public-kubernetes-the-hard-way.id}"
   source_dest_check           = true
@@ -546,29 +470,7 @@ resource "aws_instance" "jump-kubernetes-the-hard-way" {
     Creator = "terraform"
   }
 }
-```
-> SSH access to the jump server is configured via a security group rule that only permits your IP address. As a best practice, do not make this available to 0.0.0.0/0. 
 
-### Configure SSH access
-
-Create the SSH key pair
-Follow the steps in the [AWS documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html) to create this manually. Note the key pair name. 
->If you want to create the keypair using Terraform note that this resource requires an [existing user-supplied key pair](https://www.terraform.io/docs/providers/aws/r/key_pair.html).
-
-Limit the file permissions of the key.
-```
-chmod 400 <path to pem file>
-```
-Configure the SSH agent to be aware of the key.
-```
-ssh-add <path to pem file>
-```
-> If using Cygwin, [configure cygwin](http://flummox-engineering.blogspot.com/2017/11/ssh-add-could-not-open-connection-to-your-authentication-agent-mingw-cygwin.html ) to support the SSH agent.
-
-Use the [ProxyJump](https://rangle.io/blog/jumpboxes-avoid-storing-ssh-keys/) configuration to SSH locally through the jump box to the instance on the private subnet. This avoids storing the SSH key outside of your local machine.
-```
-ssh -J ubuntu@jump_server_ip ubuntu@protected_server
-```
-
-
-Next: [Provisioning a CA and Generating TLS Certificates](04-certificate-authority.md)
+output "jump-server" {
+  value = "${aws_instance.jump-kubernetes-the-hard-way.public_ip}"
+}
