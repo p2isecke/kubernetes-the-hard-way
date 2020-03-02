@@ -4,6 +4,8 @@ Kubernetes stores a variety of data including cluster state, application configu
 
 In this lab you will generate an encryption key and an [encryption config](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/#understanding-the-encryption-at-rest-configuration) suitable for encrypting Kubernetes Secrets.
 
+A script has been created to [create and distribute](../scripts/06-data-encryption-keys.sh) the encryption config file.
+
 ## The Encryption Key
 
 Generate an encryption key:
@@ -33,11 +35,6 @@ EOF
 ```
 
 Copy the `encryption-config.yaml` encryption config file to each controller instance:
-
-```
-for instance in controller-0 controller-1 controller-2; do
-  gcloud compute scp encryption-config.yaml ${instance}:~/
-done
-```
+* encryption-config.yaml
 
 Next: [Bootstrapping the etcd Cluster](07-bootstrapping-etcd.md)
