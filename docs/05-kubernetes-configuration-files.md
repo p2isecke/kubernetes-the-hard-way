@@ -13,12 +13,13 @@ Each kubeconfig requires a Kubernetes API Server to connect to. To support high 
 Retrieve the `kubernetes-the-hard-way` static IP address:
 
 ```
-KUBERNETES_PUBLIC_ADDRESS=$(gcloud compute addresses describe kubernetes-the-hard-way \
-  --region $(gcloud config get-value compute/region) \
-  --format 'value(address)')
+terraform output -json kubernetes-public-ip
 ```
 
 ### The kubelet Kubernetes Configuration File
+
+A script has been created to [create](../scripts/create-05-kubernetes-configuration-files.sh) all the kubeconfig files.
+Details about each kubeconfig file are below.
 
 When generating kubeconfig files for Kubelets the client certificate matching the Kubelet's node name must be used. This will ensure Kubelets are properly authorized by the Kubernetes [Node Authorizer](https://kubernetes.io/docs/admin/authorization/node/).
 
@@ -195,20 +196,16 @@ admin.kubeconfig
 
 ## Distribute the Kubernetes Configuration Files
 
-Copy the appropriate `kubelet` and `kube-proxy` kubeconfig files to each worker instance:
+A script has been created to [distribute](../scripts/distribute-05-kubernetes-configuration-files.sh) the appropriate kubeconfig files to each instance:
 
-```
-for instance in worker-0 worker-1 worker-2; do
-  gcloud compute scp ${instance}.kubeconfig kube-proxy.kubeconfig ${instance}:~/
-done
-```
+Copy the appropriate `kubelet` and `kube-proxy` kubeconfig files to each worker instance:
+* ${instance}.kubeconfig
+* kube-proxy.kubeconfig
 
 Copy the appropriate `kube-controller-manager` and `kube-scheduler` kubeconfig files to each controller instance:
 
-```
-for instance in controller-0 controller-1 controller-2; do
-  gcloud compute scp admin.kubeconfig kube-controller-manager.kubeconfig kube-scheduler.kubeconfig ${instance}:~/
-done
-```
+* admin.kubeconfig
+* kube-controller-manager.kubeconfig
+* kube-scheduler.kubeconfig
 
 Next: [Generating the Data Encryption Config and Key](06-data-encryption-keys.md)
